@@ -1,0 +1,20 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environments
+.venv/
+venv/
+ENV/
+env/
+
+# Streamlit logs and dynamic caching
+.streamlit/
+.streamlit/config.toml
+
+# Linter profiles and caches
+.black
+.flake8
+.pytest_cache/
+.mypy_cache/
