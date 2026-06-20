@@ -1,4 +1,9 @@
 import streamlit as st
+import pandas as pd  # Added to handle missing or null metric values (pd.notna)
+from github_client import calculate_community_health  # Added to access your metric module
+
+# Automatically pull metrics for the main ScanAPI repository
+metrics = calculate_community_health("scanapi/scanapi")
 
 # Initial page configuration
 st.set_page_config(
@@ -33,25 +38,27 @@ tab_onboarding, tab_leaderboard, tab_trends, tab_marketing = st.tabs(
 with tab_onboarding:
     st.header("Contributor Onboarding Hub")
     st.subheader("Lowering the barrier to entry")
-    st.info(
-        "Feature incoming: Dynamic aggregation of "
-        "'good first issue' and 'help wanted' labels."
-    )
 
-    # Visual example of metric cards (TTFR and TTM)
+    # Visual metrics extracted dynamically from the GitHub client module
     col1, col2 = st.columns(2)
     with col1:
         st.metric(
             label="Avg Time-to-First-Response (TTFR)",
-            value="⏳ Loading...",
-            delta="Target: < 24h",
+            value=f"{metrics['avg_ttfr_hours']:.2f} hrs" if pd.notna(metrics["avg_ttfr_hours"]) else "N/A",
+            #delta="Target: < 24h",
         )
     with col2:
         st.metric(
             label="Avg Time-to-Merge (TTM)",
-            value="⏳ Loading...",
-            delta="Target: < 48h",
+            value=f"{metrics['avg_ttm_hours']:.2f} hrs" if pd.notna(metrics["avg_ttm_hours"]) else "N/A",
+            #delta="Target: < 48h",
         )
+
+    # Render raw issues dataframe beneath metrics if data exists
+    if not metrics["issues_df"].empty:
+        st.subheader("📋 Active Issue Stream")
+        st.dataframe(metrics["issues_df"], use_container_width=True)
+
 
 with tab_leaderboard:
     st.header("Community Wall of Fame")
