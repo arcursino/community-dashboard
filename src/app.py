@@ -3,7 +3,8 @@ import pandas as pd  # Added to handle missing or null metric values (pd.notna)
 from github_client import (
     calculate_community_health,
 )  # Added to access your metric module
-
+from io import BytesIO
+from PIL import Image, ImageDraw, ImageFont
 
 # Initial page configuration
 st.set_page_config(
@@ -155,13 +156,109 @@ with tab_trends:
         "tracking issue activity grouped by labels."
     )
 
+# ---------------------------------------------------------
+# 📱 TAB 4: MARKETING & SOCIAL MEDIA ASSETS
+# ---------------------------------------------------------
 with tab_marketing:
-    st.header("Social Media Helper & Automation")
-    st.subheader("Empowering community advocates")
-    st.info(
-        "Feature incoming: Automated text templates and dynamic "
-        "'Contributor of the Week' image generators."
+    st.header("Social Media Assets & Advocacy Hub")
+    st.subheader("Amplify community wins instantly")
+
+    st.markdown("### 📝 Weekly Progress Snippet")
+    st.write(
+        "Copy this data-driven summary to share your project momentum on Twitter/X, LinkedIn, or Discord."
     )
+
+    # Calculate metrics for the text template from df_pulls
+    if not df_pulls.empty:
+        total_prs = len(df_pulls)
+        # Assuming the author's login profile name is nested or tracked under 'assignee' or similar profile identifier
+        # If your pull dataframe records an 'author' column from earlier parsing, use that. Fallback to unique titles/assignees if needed.
+        unique_authors = (
+            df_pulls["assignee"].nunique() if "assignee" in df_pulls.columns else 1
+        )
+        if unique_authors == 0:
+            unique_authors = 1
+    else:
+        total_prs = 0
+        unique_authors = 0
+
+    # Build the dynamic f-string template
+    marketing_text = (
+        f"🔥 Huge shoutout to the ScanAPI ecosystem!\n\n"
+        f"This week, our incredible community successfully closed and merged {total_prs} Pull Requests "
+        f"driven by {unique_authors} unique open-source authors! 🚀\n\n"
+        f"Check out our performance metrics and see how you can make your first contribution here: "
+        f"https://github.com/scanapi/scanapi"
+    )
+    st.text_area(
+        label="Generated Social Post Summary:",
+        value=marketing_text,
+        height=180,
+        help="Click the copy icon in the upper right corner of this box to copy the text.",
+    )
+
+    st.divider()
+
+    st.markdown("### 🎨 Dynamic Contributor Card Generator")
+    st.write(
+        "Generate custom-branded milestone graphics to celebrate outstanding contributors."
+    )
+
+    # Inputs for customization
+    contributor_handle = st.text_input(
+        "Enter Contributor GitHub Username:", "developer_name"
+    )
+    milestone_text = st.text_input(
+        "Enter Achievement Milestone:", "Merged a major core logic optimization!"
+    )
+
+    if st.button("Generate Branded Milestone Card"):
+        # 1. Create a base canvas with ScanAPI brand colors (Dark background)
+        card_width = 800
+        card_height = 400
+        scanapi_dark_blue = (15, 23, 42)  # RGB matching modern dark UI
+        scanapi_electric_blue = (56, 189, 248)  # RGB accent cyan
+        white = (255, 255, 255)
+
+        img = Image.new("RGB", (card_width, card_height), color=scanapi_dark_blue)
+        draw = ImageDraw.Draw(img)
+
+        # 2. Draw branded border/accent line at the top boundary
+        draw.rectangle([(0, 0), (card_width, 15)], fill=scanapi_electric_blue)
+
+        # 3. Load basic default fonts (Safe fallback across environments without external .ttf assets)
+        try:
+            # Try loading a default system font if available, else fallback
+            font_title = ImageFont.load_default()
+        except Exception:
+            font_title = ImageFont.load_default()
+
+        # 4. Burn textual data onto the background image surface
+        # Using simple pixel-positioned draws to safely output details
+        draw.text((50, 60), "ScanAPI Community Milestone", fill=scanapi_electric_blue)
+        draw.text((50, 120), f"🎉 Congratulations, @{contributor_handle}!", fill=white)
+        draw.text((50, 180), f"Contribution: {milestone_text}", fill=white)
+        draw.text(
+            (50, 330),
+            "Powered by ScanAPI Dashboard 🚀",
+            fill=(100, 116, 139),
+        )
+
+        # 5. Convert Image object into bytes for Streamlit downloader interface
+        buf = BytesIO()
+        img.save(buf, format="PNG")
+        byte_im = buf.getvalue()
+
+        # Display image preview in Streamlit canvas
+        st.image(img, caption="Preview Generated Card", use_container_width=True)
+
+        # Download interface trigger button
+        st.download_button(
+            label="📥 Download Milestone Card (.png)",
+            data=byte_im,
+            file_name=f"scanapi_milestone_{contributor_handle}.png",
+            mime="image/png",
+        )
 
 # Minimalist Sidebar Footer
 st.sidebar.markdown("---")
