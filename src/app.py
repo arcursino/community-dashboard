@@ -1,6 +1,8 @@
 import streamlit as st
 import pandas as pd  # Added to handle missing or null metric values (pd.notna)
-from github_client import calculate_community_health  # Added to access your metric module
+from github_client import (
+    calculate_community_health,
+)  # Added to access your metric module
 
 # Automatically pull metrics for the main ScanAPI repository
 metrics = calculate_community_health("scanapi/scanapi")
@@ -44,14 +46,22 @@ with tab_onboarding:
     with col1:
         st.metric(
             label="Avg Time-to-First-Response (TTFR)",
-            value=f"{metrics['avg_ttfr_hours']:.2f} hrs" if pd.notna(metrics["avg_ttfr_hours"]) else "N/A",
-            #delta="Target: < 24h",
+            value=(
+                f"{metrics['avg_ttfr_hours']:.2f} hrs"
+                if pd.notna(metrics["avg_ttfr_hours"])
+                else "N/A"
+            ),
+            # delta="Target: < 24h",
         )
     with col2:
         st.metric(
             label="Avg Time-to-Merge (TTM)",
-            value=f"{metrics['avg_ttm_hours']:.2f} hrs" if pd.notna(metrics["avg_ttm_hours"]) else "N/A",
-            #delta="Target: < 48h",
+            value=(
+                f"{metrics['avg_ttm_hours']:.2f} hrs"
+                if pd.notna(metrics["avg_ttm_hours"])
+                else "N/A"
+            ),
+            # delta="Target: < 48h",
         )
 
     # Render raw issues dataframe beneath metrics if data exists

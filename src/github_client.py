@@ -2,6 +2,7 @@ import pandas as pd
 from github import Github, RateLimitExceededException
 import streamlit as st
 
+
 def get_github_client():
     """
     Fetches the token from secrets.toml and initializes the GitHub client.
@@ -10,7 +11,10 @@ def get_github_client():
     token = st.secrets.get("GITHUB_TOKEN", None)
     if token:
         return Github(token)
-    return Github()  # Fallback to unauthenticated client (significantly lower rate limits)
+    return (
+        Github()
+    )  # Fallback to unauthenticated client (significantly lower rate limits)
+
 
 @st.cache_data(ttl=900, show_spinner="Fetching GitHub community metrics...")
 def fetch_raw_repo_data(repo_name: str):
@@ -26,7 +30,7 @@ def fetch_raw_repo_data(repo_name: str):
         pulls_data = []
 
         # Limiting to the 100 most recent items to prevent severe API degradation
-        for issue in repo.get_issues(state='all')[:100]:
+        for issue in repo.get_issues(state="all")[:100]:
             base_info = {
                 "id": issue.id,
                 "number": issue.number,
@@ -60,6 +64,7 @@ def fetch_raw_repo_data(repo_name: str):
         st.error("💥 GitHub API Rate limit reached! Serving empty fallback arrays.")
         return {"issues": [], "pulls": []}
 
+
 def calculate_community_health(repo_name: str):
     """
     Transforms raw dictionary arrays into structured DataFrames.
@@ -72,20 +77,24 @@ def calculate_community_health(repo_name: str):
 
     # --- Time-to-First-Response (TTFR) Calculation in Hours ---
     if not df_issues.empty:
-        df_issues['created_at'] = pd.to_datetime(df_issues['created_at'])
-        df_issues['first_response_at'] = pd.to_datetime(df_issues['first_response_at'])
-        df_issues['ttfr_hours'] = (df_issues['first_response_at'] - df_issues['created_at']).dt.total_seconds() / 3600
-        avg_ttfr = df_issues['ttfr_hours'].mean()
+        df_issues["created_at"] = pd.to_datetime(df_issues["created_at"])
+        df_issues["first_response_at"] = pd.to_datetime(df_issues["first_response_at"])
+        df_issues["ttfr_hours"] = (
+            df_issues["first_response_at"] - df_issues["created_at"]
+        ).dt.total_seconds() / 3600
+        avg_ttfr = df_issues["ttfr_hours"].mean()
     else:
         avg_ttfr = None
 
     # --- Time-to-Merge (TTM) Calculation in Hours ---
     if not df_pulls.empty:
-        df_pulls['created_at'] = pd.to_datetime(df_pulls['created_at'])
-        df_pulls['merged_at'] = pd.to_datetime(df_pulls['merged_at'])
-        merged_prs = df_pulls[df_pulls['is_merged'] == True].copy()
-        merged_prs['ttm_hours'] = (merged_prs['merged_at'] - merged_prs['created_at']).dt.total_seconds() / 3600
-        avg_ttm = merged_prs['ttm_hours'].mean()
+        df_pulls["created_at"] = pd.to_datetime(df_pulls["created_at"])
+        df_pulls["merged_at"] = pd.to_datetime(df_pulls["merged_at"])
+        merged_prs = df_pulls[df_pulls["is_merged"] == True].copy()
+        merged_prs["ttm_hours"] = (
+            merged_prs["merged_at"] - merged_prs["created_at"]
+        ).dt.total_seconds() / 3600
+        avg_ttm = merged_prs["ttm_hours"].mean()
     else:
         avg_ttm = None
 
@@ -93,5 +102,5 @@ def calculate_community_health(repo_name: str):
         "issues_df": df_issues,
         "pulls_df": df_pulls,
         "avg_ttfr_hours": avg_ttfr,
-        "avg_ttm_hours": avg_ttm
+        "avg_ttm_hours": avg_ttm,
     }
