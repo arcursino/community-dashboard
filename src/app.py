@@ -3,6 +3,8 @@ import streamlit as st
 import pandas as pd
 from PIL import Image, ImageDraw, ImageFont
 from github_client import calculate_community_health
+import plotly.express as px
+from datetime import datetime, timedelta
 
 # --- Layout Configuration ---
 st.set_page_config(
@@ -140,10 +142,116 @@ with tab_lead:
         st.dataframe(df_pulls, use_container_width=True)
 
 # ---------------------------------------------------------
-# 📈 TAB 3: TRENDS
+# 📈 TAB 3: TREND ANALYSIS & OPERATIONAL BOTTLENECKS
 # ---------------------------------------------------------
 with tab_trend:
     st.header("Issue Trend Analysis")
+    st.subheader("Macroscopic view of project progression")
+
+    if not df_issues.empty:
+        # Clone raw data to avoid mutations
+        df_trends = df_issues.copy()
+
+        # Ensure datetime parsing is active
+        df_trends["created_at"] = pd.to_datetime(df_trends["created_at"])
+        df_trends["closed_at"] = pd.to_datetime(df_trends["closed_at"])
+
+        # 🎛️ TIME-RANGE SIDEBAR CONTROL Extension
+        st.sidebar.markdown("---")
+        st.sidebar.header("📈 Historical Scope")
+
+        time_window = st.sidebar.selectbox(
+            "Select Time Frame:",
+            options=[
+                "Last 30 Days",
+                "Last 60 Days",
+                "Last 90 Days",
+                "All Retrieved (Recent 100)",
+            ],
+            index=3,
+        )
+
+        # Apply Time Range Filters using explicit delta offsets
+        now = datetime.now(df_trends["created_at"].dt.tz)
+        if time_window == "Last 30 Days":
+            cutoff = now - timedelta(days=30)
+            df_trends = df_trends[df_trends["created_at"] >= cutoff]
+        elif time_window == "Last 60 Days":
+            cutoff = now - timedelta(days=60)
+            df_trends = df_trends[df_trends["created_at"] >= cutoff]
+        elif time_window == "Last 90 Days":
+            cutoff = now - timedelta(days=90)
+            df_trends = df_trends[df_trends["created_at"] >= cutoff]
+        elif time_window == "All Retrieved (Recent 100)":
+            pass  # No filtering needed
+
+        # --- SECTION 1: CUMULATIVE VOLUMES (TREND ANALYSIS) ---
+        st.markdown("### 📊 Cumulative Issues Volumetrics")
+        # Updated description helper note
+        st.write(
+            f"Historical projection matching data window: `{time_window}`"
+        )
+        # Sort dates to build timeline
+        df_trends = df_trends.sort_values("created_at")
+        df_trends["date_only"] = df_trends["created_at"].dt.date
+
+        # Compute arrival totals
+        created_daily = (
+            df_trends.groupby("date_only").size().reset_index(name="Opened")
+        )
+        created_daily["Cumulative Opened"] = created_daily["Opened"].cumsum()
+        fig_cum = px.area(
+            created_daily,
+            x="date_only",
+            y="Cumulative Opened",
+            title=f"Ecosystem Growth Tracking ({time_window})",
+            labels={
+                "date_only": "Timeline",
+                "Cumulative Opened": "Total Issues Created",
+            },
+            template="plotly_dark",
+        )
+        st.plotly_chart(fig_cum, use_container_width=True)
+
+        st.divider()
+
+        # --- SECTION 2: BOTTLENECK IDENTIFICATION BY TAGS ---
+        st.markdown("### 🏷️ Workload Bottleneck Analysis")
+        st.write("Breakdown of task volume by community label types.")
+
+        # Explode tags out to analyze categorical density
+        df_exploded = df_trends.explode("labels")
+
+        if not df_exploded.empty and df_exploded["labels"].notna().any():
+            tag_counts = (
+                df_exploded.groupby("labels")
+                .size()
+                .reset_index(name="Issue Count")
+                .sort_values(by="Issue Count", ascending=False)
+            )
+
+            # Generate horizontal bar plot to analyze tag backlogs
+            fig_tags = px.bar(
+                tag_counts,
+                x="Issue Count",
+                y="labels",
+                orientation="h",
+                title="Density Distribution of Active Labels",
+                labels={
+                    "labels": "Repository Tag",
+                    "Issue Count": "Volume",
+                },
+                color="Issue Count",
+                color_continuous_scale="Blues",
+                template="plotly_dark",
+            )
+            fig_tags.update_layout(yaxis={"categoryorder": "total ascending"})
+            st.plotly_chart(fig_tags, use_container_width=True)
+        else:
+            st.info("No categorical tags detected within this range.")
+
+    else:
+        st.info("No baseline issue data found to chart trend analysis logs.")
 
 # ---------------------------------------------------------
 # 📱 TAB 4: MARKETING & SOCIAL MEDIA ASSETS
