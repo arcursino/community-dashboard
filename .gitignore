@@ -12,6 +12,8 @@ env/
 # Streamlit logs and dynamic caching
 .streamlit/
 .streamlit/config.toml
+.streamlit/secrets.toml
+
 
 # Linter profiles and caches
 .black
