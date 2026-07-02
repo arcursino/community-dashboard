@@ -279,7 +279,9 @@ with tab_lead:
                             """,
                             unsafe_allow_html=True,
                         )
-                        st.metric(label=metric_choice, value=int(row["Volume"]))
+                        st.metric(
+                            label=metric_choice, value=int(row["Volume"])
+                        )
         else:
             st.info(
                 "✨ No active contributions match your selected "
