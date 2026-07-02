@@ -134,12 +134,142 @@ with tab_onb:
         )
 
 # ---------------------------------------------------------
-# 🏆 TAB 2: LEADERBOARD
+# 🏆 TAB 2: LEADERBOARD (Wall of Fame)
 # ---------------------------------------------------------
 with tab_lead:
     st.header("Wall of Fame")
+    st.markdown(
+        "Publicly acknowledging the most active developers within the ScanAPI ecosystem."
+    )
+
     if not df_pulls.empty:
-        st.dataframe(df_pulls, use_container_width=True)
+        # --- Interactive Controls Structure ---
+        col_f1, col_f2, col_f3 = st.columns(3)
+
+        with col_f1:
+            metric_choice = st.selectbox(
+                "Engagement Metric:",
+                options=["Merged Pull Requests", "Active Contributions"],
+                key="lead_metric",
+            )
+        with col_f2:
+            time_filter = st.selectbox(
+                "Leaderboard Timeframe:",
+                options=["All Time", "Last 30 Days"],
+                key="lead_time",
+            )
+        with col_f3:
+            st.markdown(
+                "<div style='padding-top: 28px;'></div>",
+                unsafe_allow_html=True,
+            )
+            hide_bots = st.checkbox(
+                "Hide Bot Accounts", value=True, key="lead_hide_bots"
+            )
+
+        # Clone dataframe safely
+        df_lead = df_pulls.copy()
+
+        # --- Exact Field Fallback Assignments ---
+        # Ensures fields exist even if something went wrong during parsing
+        if "author" not in df_lead.columns:
+            df_lead["author"] = df_lead.get("assignee", "Unknown Contributor")
+        if "avatar_url" not in df_lead.columns:
+            df_lead["avatar_url"] = "https://github.com"
+
+        # Force conversion to clean string representations
+        df_lead["author"] = (
+            df_lead["author"].fillna("Unknown Contributor").astype(str)
+        )
+
+        # --- Interactive Bot Exclusions Filter Logic ---
+        if hide_bots:
+            df_lead = df_lead[
+                ~df_lead["author"].str.contains(
+                    r"\[bot\]", case=False, na=False
+                )
+            ]
+            bot_list = [
+                "dependabot",
+                "github-actions",
+                "greenkeeper",
+                "snyk-bot",
+            ]
+            df_lead = df_lead[~df_lead["author"].str.lower().isin(bot_list)]
+
+        # --- Timeframe Filter Logic (With Timezone Safety) ---
+        if time_filter == "Last 30 Days" and "created_at" in df_lead.columns:
+            df_lead["created_at"] = pd.to_datetime(
+                df_lead["created_at"], errors="coerce"
+            )
+            df_lead = df_lead.dropna(subset=["created_at"])
+
+            if df_lead["created_at"].dt.tz is not None:
+                df_lead["created_at"] = df_lead["created_at"].dt.tz_localize(
+                    None
+                )
+
+            cutoff = datetime.utcnow() - timedelta(days=30)
+            df_lead = df_lead[df_lead["created_at"] >= cutoff]
+
+        # Group and rank metrics by true PR Author
+        if not df_lead.empty:
+            leaderboard_df = (
+                df_lead.groupby(["author", "avatar_url"])
+                .size()
+                .reset_index(name="Volume")
+                .sort_values(by="Volume", ascending=False)
+                .reset_index(drop=True)
+            )
+        else:
+            leaderboard_df = pd.DataFrame()
+
+        # --- Dynamic Dashboard Visual Matrix Layout ---
+        if not leaderboard_df.empty:
+            st.markdown("### 🥇 Top Tier Contributors")
+            # --- Dynamic Caption Evaluation ---
+            if time_filter == "Last 30 Days":
+                caption_text = "💡 Metrics reflect ecosystem contributions over the last 30 days."
+            else:
+                caption_text = "💡 Metrics reflect ecosystem contributions over a rolling 100-day window."
+
+            st.caption(caption_text)
+            # --- Dynamic Dashboard Visual Matrix Layout ---
+
+            grid_cols = st.columns(4)
+            for index, row in leaderboard_df.iterrows():
+                col_idx = index % 4
+
+                # Render clean avatar fallback string configurations
+                avatar = (
+                    row["avatar_url"]
+                    if pd.notnull(row["avatar_url"])
+                    else "https://github.com"
+                )
+
+                with grid_cols[col_idx]:
+                    with st.container(border=True):
+                        st.markdown(
+                            f"""
+                            <div style="text-align: center;">
+                                <img src="{avatar}" style="border-radius: 50%; width: 85px; height: 85px; object-fit: cover; border: 3px solid #38bdf8;">
+                                <h4 style="margin-top: 10px; margin-bottom: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">#{index + 1} {row['author']}</h4>
+                            </div>
+                            """,
+                            unsafe_allow_html=True,
+                        )
+                        st.metric(
+                            label=metric_choice, value=int(row["Volume"])
+                        )
+        else:
+            st.info(
+                "✨ No active contributions match your selected metrics timeframe filters."
+            )
+    else:
+        st.warning(
+            "⚠️ Baseline Pull Requests data telemetry is missing or empty."
+        )
+
 
 # ---------------------------------------------------------
 # 📈 TAB 3: TREND ANALYSIS & OPERATIONAL BOTTLENECKS
