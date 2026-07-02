@@ -139,7 +139,8 @@ with tab_onb:
 with tab_lead:
     st.header("Wall of Fame")
     st.markdown(
-        "Publicly acknowledging the most active developers within the ScanAPI ecosystem."
+        "Publicly acknowledging the most active developers "
+        "within the ScanAPI ecosystem."
     )
 
     if not df_pulls.empty:
@@ -229,9 +230,15 @@ with tab_lead:
             st.markdown("### 🥇 Top Tier Contributors")
             # --- Dynamic Caption Evaluation ---
             if time_filter == "Last 30 Days":
-                caption_text = "💡 Metrics reflect ecosystem contributions over the last 30 days."
+                caption_text = (
+                    "💡 Metrics reflect ecosystem contributions "
+                    "over the last 30 days."
+                )
             else:
-                caption_text = "💡 Metrics reflect ecosystem contributions over a rolling 100-day window."
+                caption_text = (
+                    "💡 Metrics reflect ecosystem contributions over a "
+                    "rolling 100-day window."
+                )
 
             st.caption(caption_text)
             # --- Dynamic Dashboard Visual Matrix Layout ---
@@ -252,24 +259,31 @@ with tab_lead:
                         st.markdown(
                             f"""
                             <div style="text-align: center;">
-                                <img src="{avatar}" style="border-radius: 50%;
-                                width: 85px; height: 85px; object-fit: cover;
-                                border: 3px solid #38bdf8;">
-                                <h4 style="margin-top: 10px; margin-bottom: 5px;
-                                white-space: nowrap; overflow: hidden;
-                                text-overflow: ellipsis;">
+                                <img src="{avatar}" style="
+                                    border-radius: 50%;
+                                    width: 85px;
+                                    height: 85px;
+                                    object-fit: cover;
+                                    border: 3px solid #38bdf8;
+                                ">
+                                <h4 style="
+                                    margin-top: 10px;
+                                    margin-bottom: 5px;
+                                    white-space: nowrap;
+                                    overflow: hidden;
+                                    text-overflow: ellipsis;
+                                ">
                                     #{index + 1} {row['author']}
                                 </h4>
                             </div>
                             """,
                             unsafe_allow_html=True,
                         )
-                        st.metric(
-                            label=metric_choice, value=int(row["Volume"])
-                        )
+                        st.metric(label=metric_choice, value=int(row["Volume"]))
         else:
             st.info(
-                "✨ No active contributions match your selected metrics timeframe filters."
+                "✨ No active contributions match your selected "
+                "metrics timeframe filters."
             )
     else:
         st.warning(
