@@ -252,8 +252,14 @@ with tab_lead:
                         st.markdown(
                             f"""
                             <div style="text-align: center;">
-                                <img src="{avatar}" style="border-radius: 50%; width: 85px; height: 85px; object-fit: cover; border: 3px solid #38bdf8;">
-                                <h4 style="margin-top: 10px; margin-bottom: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">#{index + 1} {row['author']}</h4>
+                                <img src="{avatar}" style="border-radius: 50%;
+                                width: 85px; height: 85px; object-fit: cover;
+                                border: 3px solid #38bdf8;">
+                                <h4 style="margin-top: 10px; margin-bottom: 5px;
+                                white-space: nowrap; overflow: hidden;
+                                text-overflow: ellipsis;">
+                                    #{index + 1} {row['author']}
+                                </h4>
                             </div>
                             """,
                             unsafe_allow_html=True,
