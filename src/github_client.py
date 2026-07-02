@@ -39,6 +39,13 @@ def fetch_raw_repo_data(repo_name: str):
                 "closed_at": issue.closed_at,
                 "labels": [label.name for label in issue.labels],
                 "assignee": (issue.assignee.login if issue.assignee else None),
+                # Add these two new keys to track the real author details:
+                "author": (issue.user.login if issue.user else "Unknown"),
+                "avatar_url": (
+                    issue.user.avatar_url
+                    if issue.user
+                    else "https://github.com"
+                ),
             }
 
             if issue.pull_request:
